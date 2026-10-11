@@ -53,13 +53,20 @@ def main():
     token = os.environ["IG_ACCESS_TOKEN"]
     dry_run = os.environ.get("DRY_RUN") == "1"
 
+    if dry_run:
+        me = call("GET", "me", {"fields": "user_id,username", "access_token": token})
+        print(f"Token OK: connected to @{me.get('username')} (id {me.get('user_id')})")
+        if str(me.get("user_id")) != str(user_id):
+            print(f"WARNING: IG_USER_ID secret is {user_id}, token belongs to {me.get('user_id')}")
+
     with open(QUEUE_FILE, encoding="utf-8") as f:
         queue = json.load(f)
 
     today = datetime.now(IST).date().isoformat()
     due = [p for p in queue if p.get("status") == "pending" and p["date"] <= today]
     if not due:
-        print(f"Nothing due on {today}.")
+        upcoming = [p for p in queue if p.get("status") == "pending"]
+        print(f"Nothing due on {today}. Pending posts waiting: {len(upcoming)}")
         return
 
     post = sorted(due, key=lambda p: p["date"])[0]
